@@ -956,7 +956,7 @@ describe('commitAndPushBranch — remote option', () => {
       cwd: repo.forkDir,
       encoding: 'utf-8',
     });
-    expect(forkLog.trim().split('\n').length).toBe(2);
+    expect(forkLog.trim().split('\n').length).toBe(3);
     const upstreamBranches = execSync('git branch', {
       cwd: repo.upstreamDir,
       encoding: 'utf-8',

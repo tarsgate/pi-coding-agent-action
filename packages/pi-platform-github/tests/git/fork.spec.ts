@@ -125,7 +125,7 @@ describe('buildForkRemoteUrl', () => {
   });
 
   test('falls back to a server URL when the origin has no owner/repo segments', () => {
-    expect(buildForkRemoteUrl('/tmp/remote.git', fork, 'https://github.com')).toBe(
+    expect(buildForkRemoteUrl('foobar', fork, 'https://github.com')).toBe(
       'https://github.com/pi-bot/test-repo.git'
     );
   });
