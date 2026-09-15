@@ -23,6 +23,11 @@ function createPRDeps(): GitHubModuleDeps {
   return {
     octokit: {
       rest: {
+        // The token authenticates as the repository owner — no fork is
+        // created in these legacy scenarios (same-repository PRs).
+        users: {
+          getAuthenticated: vi.fn(() => Promise.resolve({ data: { login: 'test-owner' } })),
+        },
         pulls: {
           create: vi.fn(() =>
             Promise.resolve({
@@ -220,6 +225,11 @@ describe('createPullRequest — fallback when pulls.create fails', () => {
     return {
       octokit: {
         rest: {
+          // Token authenticates as the repository owner (alex) — no fork,
+          // preserving the same-repository semantics these tests assert.
+          users: {
+            getAuthenticated: vi.fn(() => Promise.resolve({ data: { login: 'alex' } })),
+          },
           pulls: {
             create:
               pullsCreateImpl ??
@@ -330,6 +340,11 @@ describe('createPullRequest — non-permission errors are re-thrown', () => {
     return {
       octokit: {
         rest: {
+          // Token authenticates as the repository owner (alex) — no fork,
+          // preserving the same-repository semantics these tests assert.
+          users: {
+            getAuthenticated: vi.fn(() => Promise.resolve({ data: { login: 'alex' } })),
+          },
           pulls: { create: pullsCreateImpl },
         },
       } as any,
