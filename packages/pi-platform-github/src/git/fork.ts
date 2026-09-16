@@ -65,6 +65,8 @@ function errorMessage(error: unknown): string {
  */
 export async function getAuthenticatedLogin(deps: GitHubModuleDeps): Promise<string> {
   const log = createLogger(deps, '🍴');
+  // re-route debug logs to info so that they show up in workflow run logs
+  log.debug = log.info;
   log.debug('Resolving the authenticated user for the fork…');
   try {
     const result = await deps.octokit.rest.users.getAuthenticated();
@@ -102,6 +104,8 @@ export async function getAuthenticatedLogin(deps: GitHubModuleDeps): Promise<str
 // fallow-ignore-next-line complexity
 export async function ensureFork(deps: GitHubModuleDeps, login: string): Promise<ForkInfo> {
   const log = createLogger(deps, '🍴');
+  // re-route debug logs to info so that they show up in workflow run logs
+  log.debug = log.info;
   const { owner, repo } = deps.context.repo;
   const target = `${owner}/${repo}`;
 

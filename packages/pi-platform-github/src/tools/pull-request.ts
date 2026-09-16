@@ -526,6 +526,8 @@ interface PrepareBranchAndPRResult {
  */
 async function resolveForkForPR(deps: GitHubModuleDeps): Promise<ForkInfo | undefined> {
   const log = createLogger(deps);
+  // re-route debug logs to info so that they show up in workflow run logs
+  log.debug = log.info;
   const { owner, repo } = deps.context.repo;
 
   // Identify the account the token authenticates as — the prospective fork owner.
