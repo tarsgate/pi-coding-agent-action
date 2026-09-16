@@ -42,7 +42,7 @@ export interface ForkInfo {
  */
 function errorStatus(error: unknown): number | undefined {
   if (typeof error === 'object' && error !== null && 'status' in error) {
-    const status = (error as { status: unknown }).status;
+    const status = error.status;
     if (typeof status === 'number') {
       return status;
     }

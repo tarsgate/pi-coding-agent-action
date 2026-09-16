@@ -321,7 +321,7 @@ export async function checkoutExistingBranch(
   git: SimpleGit,
   branchName: string,
   log: { debug: (msg: string) => void; warning: (msg: string) => void },
-  remoteName: string = 'origin'
+  remoteName = 'origin'
 ): Promise<void> {
   const hasChanges = await hasLocalChanges(git);
 
