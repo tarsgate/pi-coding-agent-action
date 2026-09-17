@@ -26,6 +26,7 @@ export {
 export type { ForkInfo, WaitForForkReadyOptions } from './fork';
 export {
   buildForkRemoteUrl,
+  canPushToRepository,
   ensureFork,
   getAuthenticatedLogin,
   resolveForkRemoteUrl,

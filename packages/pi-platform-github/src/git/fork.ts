@@ -87,6 +87,37 @@ export async function getAuthenticatedLogin(deps: GitHubModuleDeps): Promise<str
 }
 
 /**
+ * Check whether the current token can push to the target repository.
+ *
+ * Deliberately conservative: when the API call fails (older Forgejo/Gitea
+ * instances, network errors, scope gaps) or the `permissions` field is
+ * absent, returns `false` so callers fall back to the fork flow.
+ *
+ * @param deps - Module dependencies.
+ * @returns `true` when the token can push to the repository.
+ */
+export async function canPushToRepository(deps: GitHubModuleDeps): Promise<boolean> {
+  const log = createLogger(deps, '🍴');
+  const { owner, repo } = deps.context.repo;
+  try {
+    const response = await deps.octokit.rest.repos.get({ owner, repo });
+    const canPush = response.data.permissions?.push === true;
+    log.debug(
+      canPush
+        ? `The token can push to "${owner}/${repo}" — no fork is needed.`
+        : `The token cannot push to "${owner}/${repo}" — a fork is needed to open a pull request.`
+    );
+    return canPush;
+  } catch (error) {
+    log.debug(
+      `Could not determine push permission for "${owner}/${repo}" ` +
+        `(${errorMessage(error)}) — assuming push is not possible; a fork will be used.`
+    );
+    return false;
+  }
+}
+
+/**
  * Get or create the token owner's fork of the target repository.
  *
  * When `{login}/{repo}` already exists and is a fork of the target repository

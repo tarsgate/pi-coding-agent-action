@@ -17,6 +17,7 @@ import {
   getWorkspaceChangePaths,
   commitAndPushBranch,
   appendCoAuthoredBy,
+  canPushToRepository,
   ensureFork,
   getAuthenticatedLogin,
   resolveForkRemoteUrl,
@@ -513,12 +514,15 @@ interface PrepareBranchAndPRResult {
  * branch is pushed to the fork and the PR head is `forkOwner:branch`. The
  * fork is created on first use and reused on subsequent runs.
  *
- * Returns `undefined` when the token's owner already owns the repository —
- * a user cannot fork their own repository, so the branch is pushed to
- * `origin` and a same-repository PR is opened instead.
+ * Returns `undefined` when no fork is needed: either the token's owner
+ * already owns the repository (a user cannot fork their own repository) or
+ * the token can push to it directly — a collaborator, an org/team member,
+ * or an app installation token such as the default `GITHUB_TOKEN` with
+ * `contents: write`. In both cases the branch is pushed to `origin` and a
+ * same-repository PR is opened instead.
  *
  * @param deps - Module dependencies.
- * @returns The fork to push to, or `undefined` when forking is not possible.
+ * @returns The fork to push to, or `undefined` when forking is not needed.
  * @throws {Error} With an actionable message when the authenticated user
  *         cannot be resolved or the fork cannot be created (e.g. the default
  *         GITHUB_TOKEN authenticates as a bot that cannot own forks — a
@@ -537,6 +541,14 @@ async function resolveForkForPR(deps: GitHubModuleDeps): Promise<ForkInfo | unde
     log.debug(
       `Authenticated user "${login}" owns "${owner}/${repo}" — a user cannot fork ` +
         `their own repository, so the branch will be pushed to the repository itself.`
+    );
+    return undefined;
+  }
+
+  if (await canPushToRepository(deps)) {
+    log.debug(
+      `Authenticated user "${login}" can push to "${owner}/${repo}" — no fork ` +
+        `needed; the branch will be pushed to the repository itself.`
     );
     return undefined;
   }
@@ -783,9 +795,7 @@ export async function createPullRequest(
   }
 
   // Resolve the agent's fork of the repository — created on first use,
-  // reused afterwards. Skipped (returns undefined) when the token's owner
-  // already owns the repository, in which case the branch is pushed to
-  // `origin` and a same-repository PR is opened.
+  // reused afterwards. Skipped (returns undefined) when no fork is needed.
   const fork = await resolveForkForPR(deps);
 
   // Create and push the new branch via git CLI
