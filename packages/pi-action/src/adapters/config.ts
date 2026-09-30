@@ -18,7 +18,14 @@
  */
 
 import * as core from '@actions/core';
-import type { PiConfig } from '@alexanderfortin/pi-orchestrator';
+import type { OpengistExpiration, PiConfig } from '@alexanderfortin/pi-orchestrator';
+import {
+  DEFAULT_OPENGIST_EXPIRATION,
+  OPENGIST_EXPIRATIONS,
+} from '@alexanderfortin/pi-orchestrator';
+
+/** Valid values for the `cache_warming` input (mirrors the SDK's modes). */
+export const CACHE_WARMING_MODES = ['off', 'streaming', 'idle'] as const;
 
 // ---------------------------------------------------------------------------
 // Error message constants — keep stable; they are part of the public
@@ -106,6 +113,35 @@ export function parseLoadedTools(input: string): string[] | undefined {
   return tools.length > 0 ? [...new Set(tools)] : undefined;
 }
 
+/**
+ * Parse the `share_gist_expiration` input into an Opengist TTL preset.
+ *
+ * Returns `undefined` for empty input (the provider then applies its 7-day
+ * default) and for unrecognised values (a warning is emitted by the caller so
+ * a typo doesn't silently change the TTL). Matching is case-insensitive and
+ * whitespace-trimmed.
+ */
+export function parseGistExpiration(raw: string): OpengistExpiration | undefined {
+  const normalized = raw.trim().toLowerCase();
+  return (OPENGIST_EXPIRATIONS as readonly string[]).includes(normalized)
+    ? (normalized as OpengistExpiration)
+    : undefined;
+}
+
+/**
+ * Parse the `cache_warming` input into a prompt cache-warming mode.
+ *
+ * Returns `undefined` for empty input (the SDK then applies its default,
+ * `"streaming"`) and for unrecognised values (a warning is emitted by the
+ * caller so a typo doesn't silently change behavior). Case-insensitive.
+ */
+export function parseCacheWarmingMode(raw: string): PiConfig['cacheWarming'] {
+  const normalized = raw.trim().toLowerCase();
+  return (CACHE_WARMING_MODES as readonly string[]).includes(normalized)
+    ? (normalized as PiConfig['cacheWarming'])
+    : undefined;
+}
+
 // ---------------------------------------------------------------------------
 // Validation
 // ---------------------------------------------------------------------------
@@ -168,6 +204,18 @@ export function gatherActionsConfig(): PiConfig {
   const exportSessionJsonl = parseBooleanInput(core.getInput('export_session_jsonl'), false);
   const autoCompaction = parseBooleanInput(core.getInput('auto_compaction'), false);
   const shareSession = parseBooleanInput(core.getInput('share_session'), false);
+  const refreshModelCatalog = parseBooleanInput(core.getInput('refresh_model_catalog'), true);
+
+  // --- Prompt cache warming -----------------------------------------------
+  const cacheWarmingRaw = core.getInput('cache_warming');
+  const cacheWarming = parseCacheWarmingMode(cacheWarmingRaw);
+  if (cacheWarmingRaw.trim() && !cacheWarming) {
+    core.warning(
+      `Unknown cache_warming "${cacheWarmingRaw.trim()}". ` +
+        `Valid values are: ${CACHE_WARMING_MODES.join(', ')}. ` +
+        'Falling back to the SDK default ("streaming").'
+    );
+  }
 
   // --- Session sharing storage backend inputs ---------------------------
   const shareGistProviderRaw = core.getInput('share_gist_provider').trim().toLowerCase();
@@ -191,6 +239,18 @@ export function gatherActionsConfig(): PiConfig {
   const shareGistToken = core.getInput('share_gist_token').trim() || undefined;
   if (shareGistToken) {
     core.setSecret(shareGistToken);
+  }
+  // TTL preset for shared Opengist gists. Unset → undefined so the provider's
+  // 7-day default applies; an unrecognised value warns and also falls back to
+  // that default rather than sending a value the server would reject.
+  const shareGistExpirationRaw = core.getInput('share_gist_expiration');
+  const shareGistExpiration = parseGistExpiration(shareGistExpirationRaw);
+  if (shareGistExpirationRaw.trim() && !shareGistExpiration) {
+    core.warning(
+      `Unknown share_gist_expiration "${shareGistExpirationRaw.trim()}"; ` +
+        `defaulting to ${DEFAULT_OPENGIST_EXPIRATION}. ` +
+        `Valid values are: ${OPENGIST_EXPIRATIONS.join(', ')}.`
+    );
   }
 
   // --- Optional positive-integer inputs ----------------------------------
@@ -220,10 +280,13 @@ export function gatherActionsConfig(): PiConfig {
     exportSessionHtml,
     exportSessionJsonl,
     autoCompaction,
+    ...(cacheWarming ? { cacheWarming } : {}),
+    refreshModelCatalog,
     shareSession,
     ...(shareGistProvider ? { shareGistProvider } : {}),
     ...(shareGistApiUrl ? { shareGistApiUrl } : {}),
     ...(shareGistToken ? { shareGistToken } : {}),
+    ...(shareGistExpiration ? { shareGistExpiration } : {}),
     ...(githubToken ? { githubToken } : {}),
     ...(diffMaxLines ? { diffMaxLines } : {}),
     ...(diffMaxBytes ? { diffMaxBytes } : {}),

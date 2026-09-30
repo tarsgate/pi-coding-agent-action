@@ -1,6 +1,6 @@
 {
   "name": "pi-coding-agent-action",
-  "version": "2.28.0",
+  "version": "2.29.1",
   "private": true,
   "description": "CI/CD Action to integrate Pi coding agent in workflows",
   "scripts": {
@@ -42,9 +42,9 @@
   "dependencies": {
     "@alexanderfortin/pi-orchestrator": "workspace:*",
     "@alexanderfortin/pi-platform-github": "workspace:*",
-    "@earendil-works/pi-agent-core": "^0.85.1",
-    "@earendil-works/pi-ai": "^0.85.1",
-    "@earendil-works/pi-coding-agent": "^0.85.1"
+    "@earendil-works/pi-agent-core": "^0.87.1",
+    "@earendil-works/pi-ai": "^0.87.1",
+    "@earendil-works/pi-coding-agent": "^0.87.1"
   },
   "devDependencies": {
     "@actions/github": "^9.1.1",
@@ -65,6 +65,7 @@
     "semantic-release": "^25.0.8",
     "tsx": "^4.20.3",
     "typescript": "~6.0.3",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.11",
+    "yaml": "^2.4.0"
   }
 }

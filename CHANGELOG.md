@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.29.1] - 2026-09-28
+
+### Changed
+
+- **deps**: bump Pi to v0.87.1
+
+### Fixed
+
+- add opt-out for model auto refresh
+- get_ci_status uses the current PR head by default (#417)
+- refresh model catalog from pi.dev at startup (#416)
+
+## [2.29.0] - 2026-09-22
+
+### Added
+
+- add cache_warming input and summarize_text tool
+
+### Changed
+
+- **deps**: bump Pi sdk to v0.87.0
+
+### Fixed
+
+- **README.md**: add checkout action to interactive workflow sample (#414)
+- **deps**: bump Pi sdk to v0.86.0, remove obsolete patchSDKLoaderSource
+- ensure yaml is properly formatted
+
+## [2.28.1] - 2026-09-15
+
+### Changed
+
+- **deps-ci**: bump github/codeql-action from 4.37.9 to 4.38.0 (#412)
+- **deps-dev**: bump vitest from 4.1.10 to 4.1.11 (#410)
+
+### Fixed
+
+- **opengist**: add default TTL for opengist uploads
+
 ## [2.28.0] - 2026-09-08
 
 ### Added
@@ -662,7 +701,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - README link corrections
 - Codecov action updated, removed double build
 
-[unreleased]: https://github.com/shaftoe/pi-coding-agent-action/compare/v2.28.0...HEAD
+[unreleased]: https://github.com/shaftoe/pi-coding-agent-action/compare/v2.29.1...HEAD
+[2.29.1]: https://github.com/shaftoe/pi-coding-agent-action/compare/v2.29.0...v2.29.1
+[2.29.0]: https://github.com/shaftoe/pi-coding-agent-action/compare/v2.28.1...v2.29.0
+[2.28.1]: https://github.com/shaftoe/pi-coding-agent-action/compare/v2.28.0...v2.28.1
 [2.28.0]: https://github.com/shaftoe/pi-coding-agent-action/compare/v2.27.1...v2.28.0
 [2.27.1]: https://github.com/shaftoe/pi-coding-agent-action/compare/v2.27.0...v2.27.1
 [2.27.0]: https://github.com/shaftoe/pi-coding-agent-action/compare/v2.26.0...v2.27.0

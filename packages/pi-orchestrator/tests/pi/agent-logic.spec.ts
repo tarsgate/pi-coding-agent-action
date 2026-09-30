@@ -189,6 +189,62 @@ describe('Agent', () => {
       expect(result).toBe(agent);
     });
 
+    test('refreshes the model catalog at startup by default', async () => {
+      const refreshSpy = vi
+        .spyOn(ModelRuntime.prototype, 'refresh')
+        .mockResolvedValue({ aborted: false, errors: new Map() });
+
+      const agent = createRealAgent();
+      await agent.ready();
+
+      expect(refreshSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ providers: ['anthropic'] })
+      );
+      refreshSpy.mockRestore();
+    });
+
+    test('warns and continues when the startup catalog refresh fails', async () => {
+      const refreshSpy = vi.spyOn(ModelRuntime.prototype, 'refresh').mockResolvedValue({
+        aborted: false,
+        errors: new Map([['anthropic', new Error('catalog endpoint unreachable')]]),
+      });
+
+      const { core, messages } = createCoreWithWarningCapture();
+      const agent = new Agent(core as any, mockPlatformProvider, { ...defaultAgentConfig });
+
+      // A failed startup refresh is non-fatal: fall back to the built-in model list.
+      await expect(agent.ready()).resolves.toBe(agent);
+      expect(refreshSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          providers: ['anthropic'],
+          signal: expect.any(AbortSignal),
+        })
+      );
+      expect(messages.some(m => m.includes('Could not refresh the model catalog'))).toBe(true);
+      expect(messages.some(m => m.includes('catalog endpoint unreachable'))).toBe(true);
+      refreshSpy.mockRestore();
+    });
+
+    test('skips the startup catalog refresh when refreshModelCatalog is false', async () => {
+      const refreshSpy = vi
+        .spyOn(ModelRuntime.prototype, 'refresh')
+        .mockResolvedValue({ aborted: false, errors: new Map() });
+
+      const agent = new Agent(mockCoreAdapter as any, mockPlatformProvider, {
+        ...defaultAgentConfig,
+        refreshModelCatalog: false,
+      });
+      await expect(agent.ready()).resolves.toBe(agent);
+
+      // No provider-scoped startup refresh (the SDK's internal allowNetwork:false
+      // catalog load at create() time still happens, but no network refresh).
+      const startupRefresh = refreshSpy.mock.calls.find(
+        c => Array.isArray(c[0]?.providers) && c[0].providers.includes('anthropic')
+      );
+      expect(startupRefresh).toBeUndefined();
+      refreshSpy.mockRestore();
+    });
+
     test('subscribes to message_update events', async () => {
       const agent = createRealAgent();
 
@@ -244,42 +300,6 @@ describe('Agent', () => {
         })
       );
       expect(messages.some(m => m.includes('could not be synchronized'))).toBe(true);
-    });
-
-    test('omits the timeout signal when AbortSignal.timeout is unavailable', async () => {
-      rejectWithSyncError();
-      const refreshSpy = vi
-        .spyOn(ModelRuntime.prototype, 'refresh')
-        .mockResolvedValue({ aborted: false, errors: new Map() });
-      restore.push(() => refreshSpy.mockRestore());
-
-      // Simulate a runtime without AbortSignal.timeout (Node < 17.3) so the
-      // feature-detection guard takes the fallback and leaves the signal
-      // unset rather than throwing. Restored in afterEach.
-      const originalTimeout = AbortSignal.timeout;
-      Object.defineProperty(AbortSignal, 'timeout', { value: undefined, configurable: true });
-      restore.push(() =>
-        Object.defineProperty(AbortSignal, 'timeout', {
-          value: originalTimeout,
-          configurable: true,
-          writable: true,
-        })
-      );
-
-      const agent = new Agent(mockCoreAdapter as any, mockPlatformProvider, {
-        ...defaultAgentConfig,
-      });
-
-      // Recovery still succeeds — the refresh simply runs without a bound timeout.
-      await expect(agent.ready()).resolves.toBe(agent);
-      // Find the provider-scoped recovery call (create() also calls refresh with
-      // allowNetwork:false) and confirm it carries no `signal` property — the
-      // guard omitted it entirely because AbortSignal.timeout was unavailable.
-      const recoveryCall = refreshSpy.mock.calls.find(
-        c => c[0]?.providers?.includes('anthropic') && c[0]?.allowNetwork === true
-      );
-      expect(recoveryCall).toBeDefined();
-      expect(recoveryCall![0]).not.toHaveProperty('signal');
     });
 
     test('throws an actionable error naming the provider when recovery fails', async () => {
@@ -1193,6 +1213,31 @@ describe('Agent', () => {
       await agent.ready();
 
       expect(infoMessages).not.toContain('[auto-compaction] enabled');
+    });
+  });
+
+  describe('cacheWarming', () => {
+    test('applies cache-warming mode when config.cacheWarming is set', async () => {
+      const { core: testCore, messages: infoMessages } = createCoreWithInfoCapture();
+
+      const agent = new Agent(testCore as any, mockPlatformProvider, {
+        ...defaultAgentConfig,
+        cacheWarming: 'idle',
+      });
+
+      await agent.ready();
+
+      expect(infoMessages).toContain('[cache-warming] mode set to "idle"');
+    });
+
+    test('does not set cache-warming mode when config.cacheWarming is undefined', async () => {
+      const { core: testCore, messages: infoMessages } = createCoreWithInfoCapture();
+
+      const agent = new Agent(testCore as any, mockPlatformProvider, defaultAgentConfig);
+
+      await agent.ready();
+
+      expect(infoMessages.some(msg => msg.includes('[cache-warming]'))).toBe(false);
     });
   });
 

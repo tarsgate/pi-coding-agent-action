@@ -167,6 +167,24 @@ export class Agent {
       this.modelRuntime.registerProvider(this.config.provider, { baseUrl: this.config.baseUrl });
     }
 
+    // Fetch the latest model catalog from pi.dev so models newer than the bundled SDK resolve.
+    // Must run after the API key is set: the SDK only fetches catalogs for providers that have a credential.
+    // The SDK skips the network when PI_OFFLINE is set.
+    if (this.config.refreshModelCatalog === false) {
+      this.logger.debug('[models] Skipping model catalog refresh (refresh_model_catalog=false)');
+    } else {
+      const { errors } = await this.modelRuntime.refresh({
+        providers: [this.config.provider],
+        signal: AbortSignal.timeout(MODEL_REFRESH_TIMEOUT_MS),
+      });
+      const refreshError = errors.get(this.config.provider);
+      if (refreshError) {
+        this.logger.warning(
+          `[models] Could not refresh the model catalog: ${refreshError.message}`
+        );
+      }
+    }
+
     // Phase 1: Create services (loads extensions, registers providers).
     const services = await createAgentSessionServices({
       cwd,
@@ -261,6 +279,16 @@ export class Agent {
     if (this.config.autoCompaction) {
       session.setAutoCompactionEnabled(true);
       this.logger.info('[auto-compaction] enabled');
+    }
+
+    // Apply the prompt cache-warming mode when explicitly configured. The
+    // SDK already defaults to "streaming" (protect prefixes during long
+    // tool runs); "off" disables it and "idle" also refreshes between
+    // prompts. Refreshes are billed as a cache read + one output token and
+    // only fire when the expected savings clear the SDK's cost threshold.
+    if (this.config.cacheWarming) {
+      session.setCacheWarmingMode(this.config.cacheWarming);
+      this.logger.info(`[cache-warming] mode set to "${this.config.cacheWarming}"`);
     }
 
     // Validate that all requested tool names actually exist after extensions

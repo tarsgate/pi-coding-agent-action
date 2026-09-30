@@ -57,7 +57,7 @@ Create a workflow file, e.g., `.github/workflows/pi-agent.yml`. See the [interac
 The `develop` branch is in constant development while the `v2` branch is considered stable, if you don't want the bleeding edge you can pin to a specific release, e.g.
 
 ```yaml
-   uses: shaftoe/pi-coding-agent-action@v2.28.0
+   uses: shaftoe/pi-coding-agent-action@v2.29.1
 ```
 
 > [!NOTE]
@@ -65,7 +65,7 @@ The `develop` branch is in constant development while the `v2` branch is conside
 
 The action is bundled into a single `dist/index.js` via [esbuild](https://esbuild.github.io/) so no `node_modules` are needed at runtime. Non-code Pi SDK assets (HTML templates, theme JSON) are copied to `dist/pi-sdk/` and resolved via the `PI_PACKAGE_DIR` environment variable.
 
-Dependencies (including Pi itself) are [updated regularly](./.github/workflows/daily-deps-update.yml) to keep up with new releases.
+Dependencies (including Pi itself) are kept up to date via the [Renovate](https://github.com/apps/renovate) GitHub app.
 
 If you need to pin to a specific Pi SDK version check out previous release tags and refer to the following table to find the correct version:
 
@@ -75,9 +75,9 @@ If you need to pin to a specific Pi SDK version check out previous release tags 
 |---|---|---|
 | `@actions/core` | `3.0.1` | GitHub Actions core I/O (inputs, outputs, logging) |
 | `@actions/github` | `9.1.1` | GitHub API client (Octokit wrapper) |
-| `@earendil-works/pi-agent-core` | `0.85.1` | Pi Agent Core — agent orchestration primitives |
-| `@earendil-works/pi-ai` | `0.85.1` | Pi AI — AI model abstractions and providers |
-| `@earendil-works/pi-coding-agent` | `0.85.1` | Pi SDK — AI coding agent runtime |
+| `@earendil-works/pi-agent-core` | `0.87.1` | Pi Agent Core — agent orchestration primitives |
+| `@earendil-works/pi-ai` | `0.87.1` | Pi AI — AI model abstractions and providers |
+| `@earendil-works/pi-coding-agent` | `0.87.1` | Pi SDK — AI coding agent runtime |
 | `@js-temporal/polyfill` | `0.5.1` | Temporal API polyfill |
 | `@octokit/core` | `7.0.6` | Octokit REST API client core |
 | `@octokit/plugin-rest-endpoint-methods` | `17.0.0` | Octokit REST API endpoint methods |
@@ -120,6 +120,10 @@ jobs:
     if: startsWith(github.event.comment.body, '/pi ')
     runs-on: ubuntu-latest
     steps:
+
+      - name: Clone repository to work on
+        uses: actions/checkout@v7
+
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
@@ -166,7 +170,9 @@ jobs:
   review:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+
+      - name: Clone the repository to work on
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
@@ -223,7 +229,9 @@ jobs:
   review:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+
+      - name: Clone the repository to work on
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -273,7 +281,9 @@ jobs:
   review:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+
+      - name: Clone the repository to work on
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -325,7 +335,9 @@ jobs:
   dependency-audit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+
+      - name: Clone the repository to work on
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -366,7 +378,9 @@ jobs:
   docs-sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+
+      - name: Clone the repository to work on
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -418,7 +432,9 @@ jobs:
     if: github.event.assignee.login == 'my-pi-bot'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+
+      - name: Clone the repository to work on
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           # Check out the PR head branch when triggered from a PR
@@ -633,6 +649,21 @@ You can customize the auto-generated branch names used when Pi creates pull requ
 | `fix/{number}` | `fix/42` |
 | `{title}-{number}-{timestamp}` | `fix-auth-bug-42-1716543210000` |
 
+### Pull Requests from a Fork
+
+If there are insufficient rights to push to the repository, agent will open a PR from its own fork. The agent creates the fork automatically on first use and reuses it afterwards.
+
+1. On first use the agent creates a fork of the repository under the account that owns `github_token`; subsequent runs reuse it.
+2. The generated branch is pushed to that fork.
+3. The pull request is opened on the repository with the cross-repository head `fork-owner:branch`. `update_pull_request` pushes follow-up commits to the fork as well.
+
+This mirrors how human contributors work and keeps agent branches out of the repository's branch list.
+
+> [!IMPORTANT]
+> **Fork-based PRs need a token that can create forks.** When the token cannot push (e.g. a read-only PAT on someone else's repository, or a workflow whose `GITHUB_TOKEN` is restricted to `contents: read`), the default `secrets.GITHUB_TOKEN` authenticates as the repository's `github-actions[bot]`, which cannot own forks — `create_pull_request` fails with an actionable error in that case. Provide a classic PAT (with the `repo` scope) or a fine-grained PAT (with repository read/write + fork permissions) via the `github_token` input.
+>
+> When the token's owner already owns the repository (e.g. running the agent against your own repository with your PAT), a fork is impossible and unnecessary — the branch is pushed to the repository itself and a same-repository pull request is opened instead.
+
 ### Injecting Environment Variables
 
 Pi extensions often require environment variables for authentication or configuration. Use the native `env:` step key to pass variables from your workflow's secrets or configuration into the Pi session:
@@ -794,6 +825,7 @@ Because the pi.dev viewer **cannot** read non-GitHub gists (it hardcodes `api.gi
     share_gist_provider: opengist
     share_gist_api_url: https://gist.l3x.in/api/gists   # Opengist REST API lives under /api/, not /api/v1/
     share_gist_token: ${{ secrets.OPENGIST_TOKEN }}       # Opengist access token (og_…) with gist:write scope
+    # share_gist_expiration: 7days                        # default; use `never` to keep gists forever
     provider: openai
     model: gpt-5.4
     token: ${{ secrets.OPENAI_API_KEY }}
@@ -806,6 +838,7 @@ Because the pi.dev viewer **cannot** read non-GitHub gists (it hardcodes `api.gi
 Notes:
 - The Opengist REST API create endpoint is `POST <instance>/api/gists`. Create an access token in **Settings → Access Tokens** (it starts with `og_`) and grant it the `gist:write` scope. See the [Opengist API docs](https://opengist.io/docs).
 - Gists are created as `unlisted` (not listed publicly, but readable via the unguessable URL) — the closest analogue of a GitHub "secret" gist.
+- Shared gists **expire after 7 days** by default via Opengist's server-side TTL (`share_gist_expiration`, one of `1hour`, `12hours`, `1day`, `7days`, `15days`, or `never`). Shared sessions are ephemeral CI artifacts, so they're cleaned up automatically unless you set `share_gist_expiration: never` (or use the `github` provider, which has no expiry support).
 - `share_gist_token` is required for the opengist provider (an `og_…` access token with `gist:write` scope). Unlike the `github` provider, there is **no fallback to `github_token`** — a GitHub token can never authenticate against a self-hosted Opengist instance, so without `share_gist_token` the share is skipped with a clear notice.
 - The `share_url` uses the gist's **raw route** (`<gist page>/raw/HEAD/session.html`), which Opengist serves as `text/html` so the self-contained session renders directly in a browser. The `HEAD` revision resolves to the latest commit (see the [Opengist docs](https://opengist.io/docs)). Because this raw-route behaviour is instance-specific, **verify it after upgrading Opengist** by creating a shared session and opening the link in a fresh browser — if your version doesn't accept `HEAD` on the raw route, share links will 404.
 - Set `PI_SHARE_VIEWER_URL` to a custom (non-pi.dev) viewer to instead build a `<viewer>#<gistPageUrl>` link that a self-hosted viewer can render (see [Custom viewer](#custom-viewer)).
@@ -854,12 +887,31 @@ For complex, multi-step tasks that generate a lot of context (e.g. large code re
     auto_compaction: true
 ```
 
+### Prompt Cache Warming
+
+Providers expire prompt-cache entries after a period of inactivity, so a pause — for example a long tool execution in the middle of a code review — makes the next provider request pay full input price again. Cache warming re-sends the last request with a one-token output budget shortly before the cache entry expires, keeping the (much cheaper) cached prefix alive.
+
+The SDK's `streaming` mode (the default) protects prefixes during long tool executions. Set `cache_warming: idle` to also keep caches warm between prompts — useful when the action processes multiple comment-triggered prompts in one job. Refreshes are billed as a cache read plus one output token and only fire when the expected avoided cache-miss cost exceeds the refresh cost, so they never run at a loss:
+
+```yaml
+- uses: shaftoe/pi-coding-agent-action@v2
+  with:
+    github_token: ${{ secrets.GITHUB_TOKEN }}
+    provider: anthropic
+    model: claude-sonnet-4-5
+    token: ${{ secrets.ANTHROPIC_API_KEY }}
+    cache_warming: idle
+```
+
+Set `cache_warming: off` to disable warming entirely. Warming requires a known cache lifetime for the model (built in for direct Anthropic; custom models can declare `promptCache` in `models.json`).
+
 ## Inputs
 
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
 | `auto_compaction` | Enable automatic context compaction when the conversation grows too large for the model's context window. Pi summarizes older messages to free up context space | No | `false` |
 | `base_url` | Optional override for the provider base URL (e.g., to route traffic through a proxy or use an OpenAI-compatible gateway) | No | - |
+| `cache_warming` | Prompt cache-warming mode: `off`, `streaming` (protect cache prefixes during long tool executions), or `idle` (also refresh between prompts). Refreshes cost a cache read + one output token and only fire when expected savings exceed the cost | No | `streaming` (SDK default) |
 | `branch_name_template` | Template for auto-generated branch names in `create_pull_request`. Supports variables: `{number}` (issue/PR number), `{timestamp}` (epoch ms), `{title}` (slugified PR title). Default: `pi/issue{number}-{timestamp}` | No | - |
 | `diff_ignore_patterns` | Space-separated list of file patterns to exclude from PR diffs by default (e.g. `dist/ package-lock.json`). The agent can still provide additional patterns at call time | No | - |
 | `diff_max_bytes` | Maximum diff size in bytes returned by the `get_pr_diff` tool | No | `102400` |
@@ -875,10 +927,12 @@ For complex, multi-step tasks that generate a lot of context (e.g. large code re
 | `pr_number` | Pull request number to target. Use with `workflow_dispatch` to run the agent on a specific PR without a triggering event. When set, the action fetches PR context from the API and targets all operations at the specified PR | No | - |
 | `prompt` | Optional prompt to send to the agent (skips comment extraction) | No | - |
 | `provider` | LLM provider (openai, google, anthropic, amazon-bedrock, etc.) | Yes | - |
+| `refresh_model_catalog` | Refresh the provider's model catalog from pi.dev at startup so models newer than the bundled SDK resolve. Set to `false` to skip the network round-trip and shorten boot time (the bundled model list is used instead) | No | `true` |
 | `share_session` | Share the session like pi's `/share` command: upload the exported HTML to a gist and surface a viewer link. Uses GitHub Gists by default (`share_gist_provider: github`) or a self-hosted Opengist instance. Auto-enables `export_session_html` | No | `false` |
 | `share_gist_provider` | Storage backend for `share_session`: `github` (GitHub Gists + pi.dev viewer) or `opengist` (self-hosted instance; requires `share_gist_api_url`) | No | `github` |
 | `share_gist_api_url` | API URL for the share gist provider. Required for `opengist` (e.g. `https://gist.l3x.in/api/gists`); optional override for `github` | No | - |
 | `share_gist_token` | Token used to create the shared gist. Opengist access token (`og_…`, `gist:write` scope) for `opengist` (required — no `github_token` fallback); optional GitHub PAT for the `github` provider (falls back to `github_token`) | No | - |
+| `share_gist_expiration` | Time-to-live for shared gists (`opengist` provider only): `1hour`, `12hours`, `1day`, `7days`, `15days`, or `never`. Defaults to `7days` | No | `7days` |
 | `server_url` | Override the forge server URL (e.g. `https://git.example.com`) when the runner-advertised `GITHUB_SERVER_URL` points at an internally-reachable host (e.g. `http://localhost:3000` on a Forgejo runner behind Docker). Affects user-facing links (commits, PRs, action runs) only — the API client keeps using the runner's `GITHUB_API_URL`, and platform selection is controlled by the `platform` input. | No | - |
 | `thinking_level` | Model thinking level | No | off |
 | `token` | Provider API token. Required for most providers, but can be omitted when using providers that support alternative auth mechanisms (e.g., `google-vertex` with Application Default Credentials) | No | - |
@@ -915,12 +969,13 @@ The action extends Pi with the following built-in GitHub tools:
 | Tool | Description |
 |------|-------------|
 | `create_pull_request_review` | Creates a pull request review with a summary body, inline comments anchored to specific diff lines, or both. Posts a GitHub Pull Request Review using the `pulls.createReview` API. Supports summary-only reviews, multi-line comments, diff side selection (LEFT/RIGHT), and review events (COMMENT, APPROVE, REQUEST_CHANGES). |
-| `create_pull_request` | Creates a new pull request by detecting file changes, creating a branch, committing changes via GitHub API, and opening the PR. Supports `dry_run` mode for testing without actual PR creation. |
+| `create_pull_request` | Creates a new pull request by detecting file changes, creating a branch, committing changes via GitHub API, and opening the PR. Supports `dry_run` mode for testing without actual PR creation. If there are insufficient rights to push to the repository, it will open a PR from its own fork. The tool creates the fork automatically on first use and reuses it afterwards. |
 | `get_ci_status` | Checks the CI/CD status for a pull request or commit ref. Returns both check runs and workflow runs with their statuses, conclusions, and URLs. Accepts optional `pull_number`, `ref`, `status`, and `conclusion` filters. For failed workflow runs, use the returned `run_id` with `get_workflow_run_logs` to fetch detailed job logs. |
 | `get_issue_or_pr_thread` | Retrieves the full thread of an issue or pull request including title, body, state, labels, branch info (for PRs), all comments, and review comments (inline comments on specific lines of the diff) for PRs. Useful for understanding the full context before making changes. |
 | `get_pr_diff` | Fetches the diff of a pull request on demand. Useful when the agent needs to understand what changed in a PR, e.g. for code reviews or addressing review feedback. Supports configurable `max_lines` truncation (default: 1000), max byte size cap (default: 100KB), and ignore patterns to filter out noisy paths. |
 | `get_workflow_run_logs` | Fetches job logs for a specific GitHub Actions workflow run to diagnose CI failures. Lists all jobs for a run and downloads their logs, truncated to 50KB by default (configurable via `max_bytes`). |
-| `update_pull_request` | Updates an existing pull request by pushing new commits to the PR branch and optionally updating the title and/or description. Supports `dry_run` mode for testing without actual modifications. |
+| `summarize_text` | Summarizes very long text (CI logs, large threads, file dumps) with a separate one-shot LLM call using the current session model, returning only the summary — keeping the raw text out of the conversation context. Accepts `text`, an optional `focus` instruction, and `max_words`. |
+| `update_pull_request` | Updates an existing pull request by pushing new commits to the PR branch (in the fork for fork-based PRs, in the repository otherwise) and optionally updating the title and/or description. Supports `dry_run` mode for testing without actual modifications. |
 
 > [!TIP]
 > Set `load_builtin_extensions` input to `false` to disable custom tool auto loading.

@@ -6,7 +6,9 @@
  */
 
 import type { Temporal } from '@js-temporal/polyfill';
+import type { CacheWarmingMode } from '@earendil-works/pi-coding-agent';
 import type { CreateReactionType, PlatformProvider } from './platform';
+import type { OpengistExpiration } from './share/opengist';
 
 /**
  * Platform-neutral logging interface.
@@ -224,9 +226,24 @@ export interface PiConfig extends DiffConfig {
    */
   loadedTools?: string[];
   baseUrl?: string;
+  /**
+   * Whether to refresh the provider's model catalog from pi.dev at startup
+   * (after credential synchronisation) so models newer than the bundled SDK
+   * resolve. Defaults to `true`; set to `false` to skip the network round-trip
+   * and shorten boot time (the bundled model list is used instead).
+   */
+  refreshModelCatalog?: boolean;
   exportSessionHtml?: boolean;
   exportSessionJsonl?: boolean;
   autoCompaction?: boolean;
+  /**
+   * Prompt cache-warming mode (`"off"`, `"streaming"`, or `"idle"`).
+   *
+   * Keeps expensive prompt-cache prefixes alive during long tool runs
+   * (and, with `"idle"`, between prompts) using cost-aware one-token
+   * refreshes. `undefined` leaves the SDK default (`"streaming"`).
+   */
+  cacheWarming?: CacheWarmingMode;
   /**
    * Share the session like pi's `/share` command: upload the exported
    * HTML to a secret GitHub Gist and surface a pi.dev-style viewer link.
@@ -267,6 +284,13 @@ export interface PiConfig extends DiffConfig {
    * falls back to {@link githubToken} when unset, so a single token suffices.
    */
   shareGistToken?: string;
+  /**
+   * Time-to-live for shared Opengist gists (`'1hour' | '12hours' | '1day' |
+   * '7days' | '15days' | 'never'`). Defaults to `'7days'` when unset (or when
+   * the provider is `'github'`, which has no TTL support). Shared sessions are
+   * ephemeral CI artifacts, so they expire unless this is set to `'never'`.
+   */
+  shareGistExpiration?: OpengistExpiration;
   /** Override the default system prompt. */
   systemPrompt?: string;
   /** Working directory. Defaults to `process.cwd()`. */

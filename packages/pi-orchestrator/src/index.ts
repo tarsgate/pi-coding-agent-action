@@ -50,6 +50,8 @@ export { getPRDiffToolFactory, executeGetPRDiff } from './pi/tools/get-pr-diff';
 export { getIssueOrPRThreadToolFactory } from './pi/tools/get-thread';
 export { getWorkflowRunLogsToolFactory } from './pi/tools/get-workflow-run-logs';
 export { updatePullRequestToolFactory } from './pi/tools/update-pr';
+export { createSummarizeToolFactory } from './pi/tools/summarize';
+export type { SummarizeTextDetails } from './pi/tools/summarize';
 
 // Version
 export { getActionVersion, getPiVersion, formatActionVersion } from './version';
@@ -70,7 +72,10 @@ export {
   createOpengistGist,
   opengistGistProvider,
   DEFAULT_OPENGIST_API_PATH,
+  DEFAULT_OPENGIST_EXPIRATION,
+  OPENGIST_EXPIRATIONS,
 } from './share/opengist';
+export type { OpengistExpiration } from './share/opengist';
 export { resolveGistProvider, resolveShareToken } from './share/provider';
 export type { ShareProviderConfig } from './share/provider';
 

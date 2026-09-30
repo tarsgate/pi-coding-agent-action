@@ -1,5 +1,5 @@
-import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
-import { build, type Plugin } from 'esbuild';
+import { copyFileSync, existsSync, mkdirSync, rmSync } from 'node:fs';
+import { build } from 'esbuild';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolvePiSdkPackagePath } from './pi-sdk';
@@ -45,33 +45,14 @@ export {
  * This patch can be removed once the SDK uses virtual modules for bundled Node
  * by default.
  */
-const SDK_LOADER_NODE_BRANCH = /: \{ alias: getAliases\(\) \}\),/;
-
-/** Apply the bundled Node extension-loader patch to SDK source. */
-export function patchSDKLoaderSource(source: string): string {
-  const patched = source.replace(
-    SDK_LOADER_NODE_BRANCH,
-    ': { virtualModules: VIRTUAL_MODULES, tryNative: false }),'
-  );
-  if (patched === source) {
-    throw new Error(
-      '[patch-sdk-loader] Bundled Node extension loader pattern not matched; the SDK may have changed.'
-    );
-  }
-  return patched;
-}
-
-function patchSDKLoaderPlugin(): Plugin {
-  return {
-    name: 'patch-sdk-loader',
-    setup(build) {
-      build.onLoad({ filter: /extensions\/loader\.js$/ }, async args => ({
-        contents: patchSDKLoaderSource(readFileSync(args.path, 'utf-8')),
-        loader: 'js',
-      }));
-    },
-  };
-}
+/**
+ * Since pi-coding-agent 0.86.0 the SDK natively uses virtual modules (and
+ * `tryNative: false`) for bundled Node builds when the build-time
+ * `PI_BUNDLED_NODE` define is set — the same mechanism it already used for
+ * Bun binaries. Defining it here keeps jiti resolving npm extensions' Pi peer
+ * dependencies against the bundled host runtime instead of the temporary
+ * installation directory. (Replaces the former source patch of loader.js.)
+ */
 
 /**
  * Pi SDK runtime assets that must be copied to `dist/pi-sdk/` because they're
@@ -92,11 +73,7 @@ const SDK_ASSETS: ReadonlyArray<readonly [string, readonly string[]]> = [
  * Copy a single SDK asset directory, creating the destination as needed and
  * silently skipping missing source files. Exported for unit testing.
  */
-export function copySdkAssetDir(
-  srcDir: string,
-  destDir: string,
-  files: readonly string[]
-): void {
+export function copySdkAssetDir(srcDir: string, destDir: string, files: readonly string[]): void {
   if (!existsSync(srcDir)) return;
   mkdirSync(destDir, { recursive: true });
   for (const file of files) {
@@ -139,11 +116,12 @@ export async function buildDist(cwd: string = process.cwd()): Promise<void> {
     outfile: join(cwd, 'dist/index.js'),
     format: 'cjs',
     minify: true,
-    plugins: [patchSDKLoaderPlugin()],
+    plugins: [],
     define: {
       'import.meta.url': 'importMetaUrl',
       __PI_CODING_AGENT_VERSION__: JSON.stringify(piVersion),
       __VERSION__: JSON.stringify(version),
+      PI_BUNDLED_NODE: 'true',
     },
     inject: [join(cwd, 'packages/pi-action/src/import-meta-url.js')],
   });
