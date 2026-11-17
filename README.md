@@ -127,6 +127,8 @@ jobs:
     steps:
       - name: Clone repository to work on
         uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -136,7 +138,7 @@ jobs:
       - name: Run Pi agent
         uses: shaftoe/pi-coding-agent-action@v2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           provider: my-provider
           model: some-model
           token: ${{ secrets.MODEL_API_KEY }}
@@ -152,7 +154,7 @@ You can use the `prompt` input to run the agent without requiring a comment trig
 - name: Run Pi agent with fixed prompt
   uses: shaftoe/pi-coding-agent-action@v2
   with:
-    github_token: ${{ secrets.GITHUB_TOKEN }}
+    github_token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
     provider: openai
     model: gpt-5.4
     token: ${{ secrets.OPENAI_API_KEY }}
@@ -177,6 +179,7 @@ jobs:
       - name: Clone the repository to work on
         uses: actions/checkout@v7
         with:
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
 
@@ -186,7 +189,7 @@ jobs:
 
       - uses: shaftoe/pi-coding-agent-action@v2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           provider: openai
           model: gpt-5.4
           token: ${{ secrets.OPENAI_API_KEY }}
@@ -235,6 +238,7 @@ jobs:
       - name: Clone the repository to work on
         uses: actions/checkout@v7
         with:
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
       - uses: actions/setup-node@v6
@@ -243,7 +247,7 @@ jobs:
 
       - uses: shaftoe/pi-coding-agent-action@v2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           provider: ${{ vars.PROVIDER }}
           model: ${{ vars.MODEL }}
           token: ${{ secrets.API_KEY }}
@@ -286,6 +290,7 @@ jobs:
       - name: Clone the repository to work on
         uses: actions/checkout@v7
         with:
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
       - uses: actions/setup-node@v6
@@ -294,7 +299,7 @@ jobs:
 
       - uses: shaftoe/pi-coding-agent-action@v2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           provider: ${{ vars.PROVIDER }}
           model: ${{ vars.MODEL }}
           token: ${{ secrets.API_KEY }}
@@ -339,6 +344,7 @@ jobs:
       - name: Clone the repository to work on
         uses: actions/checkout@v7
         with:
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
       - uses: actions/setup-node@v6
@@ -348,7 +354,7 @@ jobs:
       - uses: shaftoe/pi-coding-agent-action@v2
         id: pi
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           provider: openai
           model: gpt-5.4
           token: ${{ secrets.OPENAI_API_KEY }}
@@ -381,6 +387,7 @@ jobs:
       - name: Clone the repository to work on
         uses: actions/checkout@v7
         with:
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
       - uses: actions/setup-node@v6
@@ -389,7 +396,7 @@ jobs:
 
       - uses: shaftoe/pi-coding-agent-action@v2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           provider: openai
           model: gpt-5.4
           token: ${{ secrets.OPENAI_API_KEY }}
@@ -434,6 +441,7 @@ jobs:
       - name: Clone the repository to work on
         uses: actions/checkout@v7
         with:
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           fetch-depth: 0
           # Check out the PR head branch when triggered from a PR
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref }}
@@ -444,7 +452,7 @@ jobs:
 
       - uses: shaftoe/pi-coding-agent-action@v2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           provider: ${{ vars.PROVIDER }}
           model: ${{ vars.MODEL }}
           token: ${{ secrets.API_KEY }}
@@ -483,7 +491,7 @@ You can load custom Pi extensions to add additional custom tools or modify agent
 - name: Run Pi agent with extensions
   uses: shaftoe/pi-coding-agent-action@v2
   with:
-    github_token: ${{ secrets.GITHUB_TOKEN }}
+    github_token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
     provider: openai
     model: gpt-5.4
     token: ${{ secrets.OPENAI_API_KEY }}
@@ -546,7 +554,7 @@ See the [Custom Provider documentation](https://github.com/badlogic/pi-mono/blob
 > - name: Run Pi agent
 >   uses: shaftoe/pi-coding-agent-action@v2
 >   with:
->     github_token: ${{ secrets.GITHUB_TOKEN }}
+>     github_token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
 >     provider: my-llm
 >     model: my-model-v1
 >     token: ${{ secrets.LLM_API_KEY }}
@@ -573,7 +581,7 @@ The `amazon-bedrock` provider runs models hosted on [AWS Bedrock](https://aws.am
 - name: Run Pi agent on Bedrock
   uses: shaftoe/pi-coding-agent-action@v2
   with:
-    github_token: ${{ secrets.GITHUB_TOKEN }}
+    github_token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
     provider: amazon-bedrock
     model: anthropic.claude-sonnet-4-5-20250929-v1:0
     # No `token` — Bedrock uses the AWS credentials configured above
@@ -590,7 +598,7 @@ By default the action loads all built-in GitHub tools (see [Custom Tools](#custo
 - name: Run Pi agent
   uses: shaftoe/pi-coding-agent-action@v2
   with:
-    github_token: ${{ secrets.GITHUB_TOKEN }}
+    github_token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
     provider: openai
     model: gpt-5.4
     token: ${{ secrets.OPENAI_API_KEY }}
@@ -607,7 +615,7 @@ Use `loaded_tools` to control exactly which tools (built-in **and** Pi's own) ar
 - name: Run Pi agent (read-only tools only)
   uses: shaftoe/pi-coding-agent-action@v2
   with:
-    github_token: ${{ secrets.GITHUB_TOKEN }}
+    github_token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
     provider: openai
     model: gpt-5.4
     token: ${{ secrets.OPENAI_API_KEY }}
@@ -632,7 +640,7 @@ Pi ships two built-in tools that let the model orchestrate other tools rather th
 ```yaml
 - uses: shaftoe/pi-coding-agent-action@v2
   with:
-    github_token: ${{ secrets.GITHUB_TOKEN }}
+    github_token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
     provider: openai
     model: gpt-5.4
     token: ${{ secrets.OPENAI_API_KEY }}
@@ -650,7 +658,7 @@ Connect [MCP](https://modelcontextprotocol.io/) servers to give the agent access
 ```yaml
 - uses: shaftoe/pi-coding-agent-action@v2
   with:
-    github_token: ${{ secrets.GITHUB_TOKEN }}
+    github_token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
     provider: openai
     model: gpt-5.4
     token: ${{ secrets.OPENAI_API_KEY }}
@@ -707,6 +715,17 @@ This mirrors how human contributors work and, in the fork case, keeps agent bran
 > [!IMPORTANT]
 > **Fork-based PRs need a token that can create forks.** When the token cannot push (e.g. a read-only PAT on someone else's repository, or a workflow whose `GITHUB_TOKEN` is restricted to `contents: read`), the default `secrets.GITHUB_TOKEN` authenticates as the repository's `github-actions[bot]`, which cannot own forks — `create_pull_request` fails with an actionable error in that case. Provide a classic PAT (with the `repo` scope) or a fine-grained PAT (with repository read/write + fork permissions) via the `github_token` input.
 
+> [!WARNING]
+> **Don't forget the checkout step.** If Pi needs to push changes and you are using a PAT, you must also pass **that same token** (same account) to the `actions/checkout` step. Otherwise, the local git configuration left behind by checkout will use the restricted `GITHUB_TOKEN`, and the branch **push** performed by `create_pull_request` fails — falling back to a fork owned by the `github_token` account, which the checkout credentials cannot push to — despite providing a PAT to the Pi action itself:
+>
+> ```yaml
+> - uses: actions/checkout@v7
+>   with:
+>     token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+> ```
+>
+> `actions/checkout` persists these credentials into the local git config by default (`persist-credentials: true`). If the agent does not need to push, set `persist-credentials: false` to avoid leaving a long-lived PAT on disk, and prefer the narrowest fine-grained token that still allows pushes.
+
 ### Injecting Environment Variables
 
 Pi extensions often require environment variables for authentication or configuration. Use the native `env:` step key to pass variables from your workflow's secrets or configuration into the Pi session:
@@ -718,7 +737,7 @@ Pi extensions often require environment variables for authentication or configur
     MY_API_KEY: ${{ secrets.MY_API_KEY }}
     ANOTHER_SERVICE_TOKEN: ${{ secrets.ANOTHER_SERVICE_TOKEN }}
   with:
-    github_token: ${{ secrets.GITHUB_TOKEN }}
+    github_token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
     provider: openai
     model: gpt-5.4
     token: ${{ secrets.OPENAI_API_KEY }}
@@ -736,7 +755,7 @@ The `token` input is optional and the action auth could also be specified as env
   env:
     OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
   with:
-    github_token: ${{ secrets.GITHUB_TOKEN }}
+    github_token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
     provider: openai
     model: gpt-5.4
 ```
@@ -755,7 +774,7 @@ jobs:
       id: pi # Required to access outputs from this step
       uses: shaftoe/pi-coding-agent-action@v2
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+        github_token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
         provider: openai
         model: gpt-5.4
         token: ${{ secrets.OPENAI_API_KEY }}
@@ -796,7 +815,7 @@ Both are disabled by default. When enabled, their file paths are exposed via the
   with:
     export_session_html: true
     export_session_jsonl: true
-    github_token: ${{ secrets.GITHUB_TOKEN }}
+    github_token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
     provider: openai
     model: gpt-5.4
     token: ${{ secrets.OPENAI_API_KEY }}
@@ -865,6 +884,7 @@ Because the pi.dev viewer **cannot** read non-GitHub gists (it hardcodes `api.gi
 - uses: shaftoe/pi-coding-agent-action@v2
   id: pi
   with:
+    github_token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
     share_session: true
     share_gist_provider: opengist
     share_gist_api_url: https://gist.l3x.in/api/gists   # Opengist REST API lives under /api/, not /api/v1/
@@ -903,6 +923,7 @@ This env var is honoured by **both** providers, but in different ways:
   env:
     PI_SHARE_VIEWER_URL: https://gistviewer.l3x.in/   # custom viewer instead of pi.dev
   with:
+    github_token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
     share_session: true
     share_gist_provider: opengist
     share_gist_api_url: https://gist.l3x.in/api/gists  # Opengist REST API lives under /api/, not /api/v1/
@@ -925,7 +946,7 @@ For complex, multi-step tasks that generate a lot of context (e.g. large code re
 ```yaml
 - uses: shaftoe/pi-coding-agent-action@v2
   with:
-    github_token: ${{ secrets.GITHUB_TOKEN }}
+    github_token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
     provider: openai
     model: gpt-5.4
     token: ${{ secrets.OPENAI_API_KEY }}
@@ -941,7 +962,7 @@ The SDK's `streaming` mode (the default) protects prefixes during long tool exec
 ```yaml
 - uses: shaftoe/pi-coding-agent-action@v2
   with:
-    github_token: ${{ secrets.GITHUB_TOKEN }}
+    github_token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
     provider: anthropic
     model: claude-sonnet-4-5
     token: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -966,7 +987,7 @@ Set `cache_warming: off` to disable warming entirely. Warming requires a known c
 | `export_session_html`     | Export the session as a self-contained HTML file. Auto-enabled when `share_session` is true                                                                                                                                                                                                                                                                                                                 | No       | `false`                   |
 | `export_session_jsonl`    | Export the session as a JSONL file (one JSON object per line) for programmatic consumption                                                                                                                                                                                                                                                                                                                  | No       | `false`                   |
 | `extensions`              | Custom Pi extensions to load (one per line). Supports npm packages (npm:package-name), git repos (git:github.com/user/repo), or local file paths                                                                                                                                                                                                                                                            | No       | -                         |
-| `github_token`            | GitHub token for API access. The default `GITHUB_TOKEN` works for all standard operations; to use `share_session`, provide a PAT/App token with gist scope instead                                                                                                                                                                                                                                          | Yes      | -                         |
+| `github_token`            | GitHub token for API access. The default `GITHUB_TOKEN` works for all standard operations; to use `share_session`, provide a PAT/App token with gist scope instead. When the agent must push changes (see [Pull Requests from a Fork](#pull-requests-from-a-fork)), pass the same token to the `actions/checkout` step as well                                                                              | Yes      | -                         |
 | `load_builtin_extensions` | Whether to load built-in GitHub tools (see [Custom Tools](#custom-tools) for the full list)                                                                                                                                                                                                                                                                                                                 | No       | `true`                    |
 | `loaded_tools`            | Controls which tools are available in the session. Defaults to `all`. Accepts a list of tool names (one per line) to load — unknown names cause the run to fail early                                                                                                                                                                                                                                       | No       | `all`                     |
 | `mcp_servers`             | MCP servers to connect, as JSON. Either a bare map (`{"name": {"command": ...}}` / `{"name": {"url": ...}}`) or the `mcp.json` shape (`{"mcpServers": {...}, "autoEnableCodemode": true}`). `headers`/`env` values may use `${NAME}` env references                                                                                                                                                         | No       | -                         |
